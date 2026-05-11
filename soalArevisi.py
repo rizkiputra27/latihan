@@ -80,9 +80,9 @@ def update():
     if hasil is None:
         print('Kode tidak ditemukan')
     else:
-        print("Ingin update yang mana (nama/sewa/jam)?")
+        print("Ingin update yang mana (1.nama/2.sewa/3.jam)?")
         baru = input()
-        if baru == "nama":
+        if baru == "nama" or baru == "1":
             namaBaru=input("Masukkan Nama baru: ")
 
             query = """
@@ -93,7 +93,7 @@ def update():
 
             cursor.execute(query, (namaBaru,kode))
 
-        elif baru == "sewa":
+        elif baru == "sewa" or baru == "2":
             sewaBaru = int(input("Masukkan biaya sewa baru: "))
 
             query = """
@@ -104,7 +104,7 @@ def update():
 
             cursor.execute(query, (sewaBaru,kode))
 
-        elif baru == "jam":
+        elif baru == "jam" or baru == "3":
             jamBaru = int(input("Masukkan biaya sewa jam: "))
             
             query = """

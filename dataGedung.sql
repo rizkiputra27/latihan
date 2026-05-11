@@ -1,0 +1,5 @@
+SHOW DATABASES;
+USE gedung;
+SHOW TABLES;
+DESCRIBE datagedung;
+

@@ -1,4 +1,15 @@
 import os
+import mysql.connector
+
+
+db = mysql.connector.connect(
+    host="localhost",
+    user="root",
+    password="",
+    database="gedung"
+)
+
+cursor = db.cursor()
 
 data_gedung = {
     'rpt':{
@@ -22,7 +33,7 @@ data_gedung = {
 
 
 def rupiah(angka):
-    return f"{angka:,}".replace(",",".")
+    return f"Rp.{angka:,}".replace(",",".")
 
 def tambah():
     kode = input("Masukkan kode: ")
@@ -30,23 +41,85 @@ def tambah():
     sewa = int(input("Masukkan sewa/Hari: "))
     jam = int(input("Masukkan sewa/Jam: "))
 
-    data_gedung[kode] = {
-            'nama':nama,
-            'sewa':sewa,
-            'jam':jam
-    }
+    query = """
+    INSERT INTO datagedung
+    (kode, nama, sewa, jam)
+    VALUES (%s,%s,%s,%s)
+    """
+
+    value = (kode,nama,sewa,jam)
+
+    cursor.execute(query, value)
+    db.commit()
+
+    print(f"{nama} berhasil ditambahan ke Database")
 
 def hapus():
     kode = input("Masukkan kode Gedung: ")
 
-    hapus = data_gedung.pop(kode)
-    print(f"{hapus['nama']} data telah dihapus")
-    input()
+    query = "SELECT * FROM datagedung WHERE kode=%s"
+    cursor.execute(query,(kode,))
+    hasil = cursor.fetchone()
+
+    if hasil is None:
+        print("Data tidak ditemukan")
+    else:
+        query = """
+        DELETE FROM datagedung
+        WHERE kode = %s
+        """
+        cursor.execute(query,(kode,))
+        db.commit
+        input()
 
 def update():
-    kode = input("Masukkan kode")
+    kode = input("Masukkan kode: ")
+    query = "SELECT * FROM datagedung WHERE kode = %s"
+    cursor.execute(query, (kode,))
+    hasil = cursor.fetchone()
+    if hasil is None:
+        print('Kode tidak ditemukan')
+    else:
+        print("Ingin update yang mana (nama/sewa/jam)?")
+        baru = input()
+        if baru == "nama":
+            namaBaru=input("Masukkan Nama baru: ")
 
-def tampil():
+            query = """
+            UPDATE datagedung
+            SET nama = %s
+            WHERE kode = %s
+            """
+
+            cursor.execute(query, (namaBaru,kode))
+
+        elif baru == "sewa":
+            sewaBaru = int(input("Masukkan biaya sewa baru: "))
+
+            query = """
+            UPDATE datagedung
+            SET sewa = %s
+            WHERE kode = %s
+            """
+
+            cursor.execute(query, (sewaBaru,kode))
+
+        elif baru == "jam":
+            jamBaru = int(input("Masukkan biaya sewa jam: "))
+            
+            query = """
+            UPDATE datagedung
+            SET jam = %s
+            WHERE kode = %s
+            """
+            cursor.execute(query, (jamBaru,kode))
+        else:
+            print("Pilihan tidak tersedia")
+        
+        db.commit()
+
+
+def tampil2():
         print("="*50)
         print(f"|{'KODE':^5}|{'NAMA':^20}|{'SEWA':^10}|{'JAM':^10}|")
         print("="*50)
@@ -59,10 +132,26 @@ def tampil():
             print(f"|{key:^5}|{NAMA:^20}|{SEWA:^10}|{JAM:^10}|")
         print("="*50)
 
+
+def tampil():
+    cursor.execute("SELECT * FROM datagedung")
+
+    hasil = cursor.fetchall()
+    print("="*65)
+    print(f"|{'KODE':^5}|{'NAMA':^20}|{'SEWA':^20}|{'JAM':^15}|")
+    print("="*65)
+    for kode,nama,sewa,jam in hasil:
+        print(f"|{kode:<5}|{nama:<20}|{rupiah(sewa):<20}|{rupiah(jam):<15}|")
+    print("="*65)   
+
 def hitung(kGedung,lama,jam):
-    if kGedung in data_gedung:
-        sewaHari = data_gedung[kGedung]['sewa']
-        sewaJam = data_gedung[kGedung]['jam']
+    query = "SELECT * FROM datagedung WHERE kode = %s"
+    cursor.execute(query, (kGedung,))
+    hasil = cursor.fetchone()
+
+    if hasil is not None:
+        sewaHari = hasil[2]
+        sewaJam = hasil[3]
         total1 = lama*sewaHari
         total2 = jam*sewaJam
         if lama > 3:
@@ -71,9 +160,9 @@ def hitung(kGedung,lama,jam):
             diskon = 0
         total3 = total1+total2
         totDis = (total1-diskon)+total2
-        return total3,diskon,totDis
+        return total3,diskon,totDis,hasil[1]
     else:
-        return 0,0,0
+        return 0,0,0,""
         
         
 
@@ -86,32 +175,21 @@ while True:
     print("2. TAMBAH GEDUNG")
     print("3. HAPUS GEDUNG")
     print("4. TAMPILKAN GEDUNG")
-    print("5. KELUAR")
+    print("5. UPDATE GEDUNG")
+    print("6. KELUAR")
 
     pilih = int(input("Masukkan menu: "))
     print()
     if pilih == 1:
-        print("="*50)
-        print(f"|{'KODE':^5}|{'NAMA':^20}|{'SEWA':^10}|{'JAM':^10}|")
-        print("="*50)
-        for key,data in data_gedung.items():
-
-            NAMA  = data['nama']
-            SEWA = data['sewa']
-            JAM = data['jam']
-
-            print(f"|{key:^5}|{NAMA:^20}|{SEWA:^10}|{JAM:^10}|")
-        print("="*50)
-
-        print("\n=====Masukkan detail transaksi=====")
+        tampil()
+        print("\n===== MENU TRANSAKSI =====")
         nama=input("Masukkan nama penyewa: ")
         kGedung = input("Masukkan kode gedung: ")
         lama = int(input("Masukkan lama sewa: "))
         jam = int(input("Masukkan kelebihan jam: "))
 
-
-        total3,diskon,totDis = hitung(kGedung,lama,jam)
-        if total3 == 0 and diskon == 0 and totDis == 0:
+        total3,diskon,totDis,namaGedung = hitung(kGedung,lama,jam)
+        if total3 == 0 and diskon == 0 and totDis == 0 and namaGedung == "":
             print()
             print("=====Kode tidak ditemukan=====")
             print()
@@ -125,7 +203,7 @@ while True:
             print("="*117)
             print(f"|{"Nama":^25}|{"Nama Gedung":^25}|{"Lama Sewa":^15}|{"Harga awal":^15}|{"Diskon":^15}|{"Total":^15}|")
             print("="*117)
-            print(f"|{nama:^25}|{data_gedung[kGedung]['nama']:^25}|{lama:^15}|{rupiah(total3):^15}|{rupiah(diskon):^15}|{rupiah(totDis):^15}|")
+            print(f"|{nama:^25}|{namaGedung:^25}|{lama:^15}|{rupiah(total3):^15}|{rupiah(diskon):^15}|{rupiah(totDis):^15}|")
             print("="*117)
             input("ENTER...")
         else:
@@ -133,7 +211,6 @@ while True:
     elif pilih == 2:
         print(f"{'>><<===> TAMBAH GEDUNG <===>><<':^50}")
         tambah()
-        tampil()
         input()
     elif pilih == 3:
         hapus()
@@ -141,6 +218,9 @@ while True:
         tampil()
         input()
     elif pilih == 5:
+        update()
+        input()
+    elif pilih == 6:
         break
     else:
         print("Pilihan tidak valid")
